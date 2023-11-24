@@ -127,5 +127,10 @@ adb -d shell /data/local/tmp/bench
 If you use `amaze` in research, in addition to citing the [AMF paper](https://ia.cr/2019/565), please cite this implementation specifically using the following bibtex. This will help me track if people care about this, and accordingly improve it.
 
 ```bibtex
-[zenodo]
+@misc{amaze,
+  author = {amaze contributors},
+  title = {\texttt{amaze}: faster asymmetric message franking},
+  year = {2023},
+  url = {https://github.com/sgmenda/amaze},
+}
 ```
