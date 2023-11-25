@@ -5,8 +5,7 @@
 //! [BS0.5]: https://crypto.stanford.edu/~dabo/cryptobook/BonehShoup_0_5.pdf
 
 use curve25519_dalek::scalar::Scalar;
-use sha2::Digest;
-use sha2::Sha256;
+use sha2::{Digest, Sha512};
 
 use crate::pok::linear_sigma::{SigmaProver, SigmaVerifier};
 
@@ -63,13 +62,12 @@ impl<Witness, WitnessStatement, ProverCommitment, ProverResponse>
     ) -> Scalar {
         let serialized_commitment = self.prover.as_ref().serialize_commitment(prover_commitment);
 
-        let mut hasher = Sha256::new();
+        let mut hasher = Sha512::new();
         hasher.update(message);
         hasher.update(b"||");
         hasher.update(&serialized_commitment);
-        let hash = hasher.finalize();
 
-        Scalar::from_bits(hash.try_into().unwrap())
+        Scalar::from_hash(hasher)
     }
 }
 
