@@ -332,7 +332,7 @@ fn scalar_xor(a: Scalar, b: Scalar) -> Scalar {
     for i in 0..a_bytes.len() {
         xor[i] = a_bytes[i] ^ b_bytes[i];
     }
-    Scalar::from_bits(xor)
+    Scalar::from_bytes_mod_order(xor)
 }
 
 #[cfg(test)]

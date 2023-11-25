@@ -27,6 +27,7 @@ impl From<RistrettoPoint> for SerializableRistrettoPoint {
 impl From<SerializableRistrettoPoint> for RistrettoPoint {
     fn from(serialized_point: SerializableRistrettoPoint) -> Self {
         CompressedRistretto::from_slice(&serialized_point.point_as_bytes)
+            .unwrap()
             .decompress()
             .unwrap()
     }
@@ -45,7 +46,7 @@ impl From<Scalar> for SerializableRistrettoScalar {
 }
 impl From<SerializableRistrettoScalar> for Scalar {
     fn from(serialized_scalar: SerializableRistrettoScalar) -> Self {
-        Scalar::from_bits(serialized_scalar.scalar_as_bytes)
+        Scalar::from_bytes_mod_order(serialized_scalar.scalar_as_bytes)
     }
 }
 
