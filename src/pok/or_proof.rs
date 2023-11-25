@@ -1,8 +1,9 @@
 //! Sigma Protocol for The OR of Two Sigma Protocols.
 //!
-//! Cf. Section 19.7.2 in [BS0.5]
+//! Cf. [CS97] and Section 19.7.2 in [BS0.5]
 //!
 //! [BS0.5]: https://crypto.stanford.edu/~dabo/cryptobook/BonehShoup_0_5.pdf
+//! [CS97]: https://crypto.ethz.ch/publications/files/CamSta97b.pdf
 
 use curve25519_dalek::scalar::Scalar;
 
@@ -194,10 +195,12 @@ where
         &mut self,
         random_challenge: OrVerifierChallenge,
     ) -> OrProverResponse<S0ProverResponse, S1ProverResponse> {
-        // This is a bit complicated, see Section 19.7.2 of [BS0.5]
+        // This is a bit complicated, see Section 19.7.2 of [BS0.5]. We use scalar arithmetic
+        // instead of XOR, as per [CS97].
         let per_verifier_secret = self.per_verifier_secret.as_ref().unwrap();
+        // We consistently let c₁ = c₀ + chal
         if !self.witness.unwrap().b {
-            let c_0 = scalar_xor(random_challenge, per_verifier_secret.s1_challenge.unwrap());
+            let c_0 = per_verifier_secret.s1_challenge.unwrap() - random_challenge;
             let z_0 = self.s0_prover.as_mut().generate_response_to_challenge(c_0);
             OrProverResponse {
                 c_0,
@@ -205,7 +208,7 @@ where
                 z_1: per_verifier_secret.s1_prover_response.unwrap(),
             }
         } else {
-            let c_1 = scalar_xor(random_challenge, per_verifier_secret.s0_challenge.unwrap());
+            let c_1 = per_verifier_secret.s0_challenge.unwrap() + random_challenge;
             let z_1 = self.s1_prover.as_mut().generate_response_to_challenge(c_1);
             OrProverResponse {
                 c_0: per_verifier_secret.s0_challenge.unwrap(),
@@ -285,8 +288,9 @@ impl<
         random_challenge: OrVerifierChallenge,
         prover_response_to_challenge: OrProverResponse<S0ProverResponse, S1ProverResponse>,
     ) -> bool {
-        // This is a bit complicated, see Section 19.7.2 of [BS0.5]
-        let c_1 = scalar_xor(random_challenge, prover_response_to_challenge.c_0);
+        // This is a bit complicated, see Section 19.7.2 of [BS0.5]. We use scalar arithmetic
+        // instead of XOR, as per [CS97].
+        let c_1 = prover_response_to_challenge.c_0 + random_challenge;
         let s0_verification_result = self.s0_verifier.as_ref().verify_response_to_challenge(
             prover_commitment.0,
             prover_response_to_challenge.c_0,
@@ -307,10 +311,11 @@ impl<
         OrProverCommitment<S0ProverCommitment, S1ProverCommitment>,
         OrProverResponse<S0ProverResponse, S1ProverResponse>,
     ) {
-        // This is a bit complicated, see Section 19.7.2 of [BS0.5]
+        // This is a bit complicated, see Section 19.7.2 of [BS0.5]. We use scalar arithmetic
+        // instead of XOR, as per [CS97].
         let mut rng = rand::thread_rng();
         let c_0 = Scalar::random(&mut rng);
-        let c_1 = scalar_xor(c_0, random_challenge);
+        let c_1 = c_0 + random_challenge;
 
         let (s0_commitment, s0_response) = self.s0_verifier.as_ref().simulate_prover_responses(c_0);
         let (s1_commitment, s1_response) = self.s1_verifier.as_ref().simulate_prover_responses(c_1);
@@ -323,16 +328,6 @@ impl<
             },
         )
     }
-}
-
-fn scalar_xor(a: Scalar, b: Scalar) -> Scalar {
-    let a_bytes = a.as_bytes();
-    let b_bytes = b.as_bytes();
-    let mut xor = [0u8; 32];
-    for i in 0..a_bytes.len() {
-        xor[i] = a_bytes[i] ^ b_bytes[i];
-    }
-    Scalar::from_bytes_mod_order(xor)
 }
 
 #[cfg(test)]
